@@ -1,0 +1,352 @@
+library(caret)
+library(dplyr)
+library(ggplot2)
+library(ggthemes)
+library(RColorBrewer)  
+library(reshape2) 
+library("tm") # for text-mining
+library("SnowballC") # for text-stemming
+library("wordcloud") # word cloud generator
+library('wordcloud2') #word cloud generator2
+library(memoise)
+
+airlines = read.csv('~/Dropbox/NYCDSA/US_Airline_Reviews/US_airline_reviews.csv')
+airlines_imputed = read.csv('~/Dropbox/NYCDSA/US_Airline_Reviews/US_airline_reviews.csv')  
+
+# Remove rogue line and turn numeric-like categorical variables into factors
+airlines = airlines %>% filter(airline != "http://www.airlinequality.com/airline-reviews/american-airlines/")
+airlines$overall = as.factor(airlines$overall)
+airlines$seat_comfort = as.factor(airlines$seat_comfort)
+airlines$cabin_service = as.factor(airlines$cabin_service)
+airlines$food_bev = as.factor(airlines$food_bev)
+airlines$route = as.factor(airlines$route)
+airlines$entertainment = as.factor(airlines$entertainment)
+airlines$ground_service = as.factor(airlines$ground_service)
+airlines$value_for_money = as.factor(airlines$value_for_money)
+
+# For airlines_imputed, remove rogue line
+airlines_imputed = airlines_imputed %>% filter(airline != "http://www.airlinequality.com/airline-reviews/american-airlines/")
+
+# Impute to missing values based on median
+class(airlines_imputed$seat_comfort)
+pre = preProcess(airlines_imputed, method = "medianImpute") 
+airlines_imputed = predict(pre, airlines_imputed)
+
+# Turn numeric-like categorical variables into factors
+airlines_imputed$overall = as.factor(airlines_imputed$overall)
+airlines_imputed$seat_comfort = as.factor(airlines_imputed$seat_comfort)
+airlines_imputed$cabin_service = as.factor(airlines_imputed$cabin_service)
+airlines_imputed$food_bev = as.factor(airlines_imputed$food_bev)
+airlines_imputed$route = as.factor(airlines_imputed$route)
+airlines_imputed$entertainment = as.factor(airlines_imputed$entertainment)
+airlines_imputed$ground_service = as.factor(airlines_imputed$ground_service)
+airlines_imputed$value_for_money = as.factor(airlines_imputed$value_for_money)
+
+##################################################################################
+##################################################################################
+
+# Dealing with NAs
+
+names(which(colSums(is.na(airlines))>0))
+
+# Refactor variables with NAs to include the string "NA" as a factor level
+# by replacing NA with "NA"
+
+# First, get levels and add "NA" (as a string)
+levels.overall <- levels(airlines$overall)
+levels.overall[length(levels.overall) + 1] = "NA"
+
+levels.seat_comfort <- levels(airlines$seat_comfort)
+levels.seat_comfort[length(levels.seat_comfort) + 1] = "NA"
+
+levels.cabin_service <- levels(airlines$cabin_service)
+levels.cabin_service[length(levels.cabin_service) + 1] = "NA"
+
+levels.cabin_service <- levels(airlines$cabin_service)
+levels.cabin_service[length(levels.cabin_service) + 1] = "NA"
+
+levels.food_bev <- levels(airlines$food_bev)
+levels.food_bev[length(levels.food_bev) + 1] = "NA"
+
+levels.entertainment <- levels(airlines$entertainment)
+levels.entertainment[length(levels.entertainment) + 1] = "NA"
+
+levels.ground_service <- levels(airlines$ground_service)
+levels.ground_service[length(levels.ground_service) + 1] = "NA"
+
+levels.value_for_money <- levels(airlines$value_for_money)
+levels.value_for_money[length(levels.value_for_money) + 1] = "NA"
+
+# Refactoring:
+airlines$overall = factor(airlines$overall, levels = levels.overall)
+airlines$overall[is.na(airlines$overall)] = "NA"
+
+airlines$seat_comfort = factor(airlines$seat_comfort, levels = levels.seat_comfort)
+airlines$seat_comfort[is.na(airlines$seat_comfort)] = "NA"
+
+airlines$cabin_service = factor(airlines$cabin_service, levels = levels.cabin_service)
+airlines$cabin_service[is.na(airlines$cabin_service)] = "NA"
+
+airlines$food_bev = factor(airlines$food_bev, levels = levels.food_bev)
+airlines$food_bev[is.na(airlines$food_bev)] = "NA"
+
+airlines$entertainment = factor(airlines$entertainment, levels = levels.entertainment)
+airlines$entertainment[is.na(airlines$entertainment)] = "NA"
+
+airlines$ground_service = factor(airlines$ground_service, levels = levels.ground_service)
+airlines$ground_service[is.na(airlines$ground_service)] = "NA"
+
+airlines$value_for_money = factor(airlines$value_for_money, levels = levels.value_for_money)
+airlines$value_for_money[is.na(airlines$value_for_money)] = "NA"
+
+features = c("cabin_service", "entertainment", "food_bev", "ground_service", "overall", 
+             "seat_comfort", "value_for_money")
+
+# features = list("Cabin Service" = cabin_service, "Inflight Entertainment" = entertainment, 
+#                 "Food and Beverage" = food_bev, "Ground Service" = ground_service, "Overall" = overall,
+#              "Seat Comfort" = seat_comfort, "Value for Money" = value_for_money)
+
+##################################################################################
+##################################################################################
+
+# Computing impacts of NAs
+
+
+# 
+# seat_comfort_NA = airlines %>% group_by(airline, seat_comfort) %>%
+#   summarise(n = n()) %>%
+#   mutate(percent = n*100/sum(n)) %>%
+#   filter(airline != 'Southwest Airlines')
+# 
+# scNA = ggplot(data = seat_comfort_NA, aes(x = seat_comfort, y = percent)) + 
+#   geom_bar(aes(fill = seat_comfort), stat = 'identity') + facet_wrap( ~ airline) +
+#   xlab("Seat Comfort Rating") + ylab("Percent of Reviews") + theme_minimal() +
+#   ggtitle("Seat Comfort Ratings by Airline") +
+#   guides(fill=guide_legend(title="Rating"))
+# scNA
+# 
+# seat_comfort_overall = airlines %>% filter(airline != 'Southwest Airlines') %>%
+#   group_by(seat_comfort) %>% summarise(n = n()) %>% 
+#   mutate(percent = n*100/sum(n))
+# 
+# 
+# sc= ggplot(data = seat_comfort_overall, aes(x = "", y = percent, fill = seat_comfort)) +
+#   geom_bar(width = 1, stat = 'identity') + coord_polar(theta = 'y') +
+#   theme_minimal() + guides(fill=guide_legend(title="Seat Comfort Rating")) +
+#   ggtitle("Percentages of Seat Comfort Ratings Overall") 
+# 
+# sc
+
+##################################################################################
+##################################################################################
+
+# Getting postive and negative data frames into text files, separated by airline
+
+airlines_pos = airlines %>% filter(overall %in% c('6','7', '8', '9', '10'))
+airlines_neg = airlines %>% filter(overall %in% c('1', '2', '3', '4', '5'))
+
+alaska_pos = airlines_pos %>% filter(airline == 'Alaska Airlines')
+alaska_neg = airlines_neg %>% filter(airline == 'Alaska Airlines')
+
+allegiant_pos = airlines_pos %>% filter(airline == 'Allegiant Air')
+allegiant_neg = airlines_neg %>% filter(airline == 'Allegiant Air')
+
+american_pos = airlines_pos %>% filter(airline == 'American Airlines')
+american_neg = airlines_neg %>% filter(airline == 'American Airlines')
+
+delta_pos = airlines_pos %>% filter(airline == 'Delta Air Lines')
+delta_neg = airlines_neg %>% filter(airline == 'Delta Air Lines')
+
+frontier_pos = airlines_pos %>% filter(airline == 'Frontier Airlines')
+frontier_neg = airlines_neg %>% filter(airline == 'Frontier Airlines')
+
+hawaiian_pos = airlines_pos %>% filter(airline == 'Hawaiian Airlines')
+hawaiian_neg = airlines_neg %>% filter(airline == 'Hawaiian Airlines')
+
+jetblue_pos = airlines_pos %>% filter(airline == 'Jetblue Airways')
+jetblue_neg = airlines_neg %>% filter(airline == 'Jetblue Airways')
+
+# southwest_pos = airlines_pos %>% filter(airline == 'Southwest Airlines')
+# southwest_neg = airlines_neg %>% filter(airline == 'Southwest Airlines')
+
+spirit_pos = airlines_pos %>% filter(airline == 'Spirit Airlines')
+spirit_neg = airlines_neg %>% filter(airline == 'Spirit Airlines')
+
+united_pos = airlines_pos %>% filter(airline == 'United Airlines')
+united_neg = airlines_neg %>% filter(airline == 'United Airlines')
+
+virgin_pos = airlines_pos %>% filter(airline == 'Virgin America')
+virgin_neg = airlines_neg %>% filter(airline == 'Virgin America')
+
+# Now write each of the above's 'customer_review' columns to a txt file:
+
+write.table(airlines_pos$customer_review,"all_pos.txt",sep="\t",row.names=FALSE)
+write.table(airlines_neg$customer_review,"all_neg.txt",sep="\t",row.names=FALSE)
+
+write.table(alaska_pos$customer_review,"alaska_pos.txt",sep="\t",row.names=FALSE)
+write.table(alaska_neg$customer_review,"alaska_neg.txt",sep="\t",row.names=FALSE)
+
+write.table(allegiant_pos$customer_review,"allegiant_pos.txt",sep="\t",row.names=FALSE)
+write.table(allegiant_neg$customer_review,"allegiant_neg.txt",sep="\t",row.names=FALSE)
+
+write.table(american_pos$customer_review,"american_pos.txt",sep="\t",row.names=FALSE)
+write.table(american_neg$customer_review,"american_neg.txt",sep="\t",row.names=FALSE)
+
+write.table(delta_pos$customer_review,"delta_pos.txt",sep="\t",row.names=FALSE)
+write.table(delta_neg$customer_review,"delta_neg.txt",sep="\t",row.names=FALSE)
+
+write.table(frontier_pos$customer_review,"frontier_pos.txt",sep="\t",row.names=FALSE)
+write.table(frontier_neg$customer_review,"frontier_neg.txt",sep="\t",row.names=FALSE)
+
+write.table(hawaiian_pos$customer_review,"hawaiian_pos.txt",sep="\t",row.names=FALSE)
+write.table(hawaiian_neg$customer_review,"hawaiian_neg.txt",sep="\t",row.names=FALSE)
+
+write.table(jetblue_pos$customer_review,"jetblue_pos.txt",sep="\t",row.names=FALSE)
+write.table(jetblue_neg$customer_review,"jetblue_neg.txt",sep="\t",row.names=FALSE)
+
+# write.table(southwest_pos$customer_review,"southwest_pos.txt",sep="\t",row.names=FALSE)
+# write.table(southwest_neg$customer_review,"southwest_neg.txt",sep="\t",row.names=FALSE)
+
+write.table(spirit_pos$customer_review,"spirit_pos.txt",sep="\t",row.names=FALSE)
+write.table(spirit_neg$customer_review,"spirit_neg.txt",sep="\t",row.names=FALSE)
+
+write.table(united_pos$customer_review,"united_pos.txt",sep="\t",row.names=FALSE)
+write.table(united_neg$customer_review,"united_neg.txt",sep="\t",row.names=FALSE)
+
+write.table(virgin_pos$customer_review,"virgin_pos.txt",sep="\t",row.names=FALSE)
+write.table(virgin_neg$customer_review,"virgin_neg.txt",sep="\t",row.names=FALSE)
+
+
+
+##################################################################################
+##################################################################################
+
+# Question 1: Analyzing Chi-square p-values across all combos of categorical variables
+
+
+airlines_categorical = airlines %>% select(-X,-author, -review_date,
+                                           -customer_review, -route, -date_flown)
+
+air_cat_positive = airlines_categorical %>% filter(overall %in% c('6','7', '8', '9', '10'))
+air_cat_negative = airlines_categorical %>% filter(overall %in% c('1', '2', '3', '4', '5'))
+
+k <- ncol(air_cat_positive)
+result_pos <- matrix(1, nrow=k, ncol=k)
+rownames(result_pos) <- colnames(result_pos) <- names(air_cat_positive)
+for(i in 1:k) {
+  for(j in 1:k) {
+    result_pos[i,j] <- chisq.test(air_cat_positive[,i], air_cat_positive[,j] )$p.value
+  }
+}
+
+n <- ncol(air_cat_negative)
+result_neg <- matrix(1, nrow=n, ncol=n)
+rownames(result_neg) <- colnames(result_neg) <- names(air_cat_negative)
+for(i in 1:k) {
+  for(j in 1:k) {
+    result_neg[i,j] <- chisq.test(air_cat_negative[,i], air_cat_negative[,j] )$p.value
+  }
+}
+
+
+pvalues_pos = melt(result_pos)
+pvalues_neg = melt(result_neg)
+
+# See the ranges of p-values
+pvalues_pos %>% group_by(value) %>% filter(row_number() == 1) 
+
+pvalues_pos$ranges <- cut(pvalues_pos$value, breaks = c(-Inf, 1e-300, 1e-250, 1e-200,
+                                      1e-150, 1e-100, 1e-50, 0, .01, .05, .1, Inf),right = FALSE)
+pvalues_neg$ranges <- cut(pvalues_neg$value, breaks = c(-Inf, 1e-300, 1e-250, 1e-200,
+                                                        1e-150, 1e-100, 1e-50, 0, .01, .05, .1, Inf),right = FALSE)
+
+p_pos = ggplot(data = pvalues_pos, aes(x=Var1, y=Var2)) + 
+  geom_tile(aes(fill = ranges), colour = "white", alpha = .8) +
+  scale_fill_brewer(palette = "RdPu") + theme_classic() +
+  xlab("") + ylab("")+ ggtitle("Chi-square p-values: Positive Reviews") +
+  guides(fill=guide_legend(title="p-value"))
+
+
+p_neg = ggplot(data = pvalues_neg, aes(x=Var1, y=Var2, fill=value)) + 
+  geom_tile(aes(fill = ranges), colour = "white", alpha = .8) +
+  scale_fill_brewer(palette = "RdPu") + theme_classic() +
+  xlab("") + ylab("") + ggtitle("Chi-square p-values: Negative Reviews") +
+  guides(fill=guide_legend(title="p-value"))
+
+
+
+##################################################################################
+##################################################################################
+
+# Question 2: Word Cloud Analysis
+
+# The list of valid books
+airline_list <<- list("All" = "all",
+                "Alaska Airlines" = "alaska",
+                "Allegiant Air" = "allegiant",
+                "American Airlines" = "american",
+                "Delta Air Lines" = "delta",
+                "Frontier Airlines" = "frontier",
+                "Hawaiian Airlines" = "hawaiian",
+                "Jetblue Airways" = "jetblue",
+                "Spirit Airlines" = "spirit",
+                "United Airlines" = "united",
+                "Virgin America" = "virgin")
+
+# Using "memoise" to automatically cache the results
+getTermMatrix <- memoise(function(company, type = 'positive') {
+  # Careful not to let just any name slip in here; a
+  # malicious user could manipulate this value.
+  if (!(company %in% airline_list))
+    stop("Unknown airline")
+  
+  if (type == 'positive') {
+  text = readLines(paste(c(company, '_pos.txt'), collapse = ''),
+                    encoding="UTF-8")
+  
+  myCorpus = Corpus(VectorSource(text))
+  myCorpus = tm_map(myCorpus, content_transformer(tolower))
+  myCorpus = tm_map(myCorpus, removePunctuation)
+  myCorpus = tm_map(myCorpus, removeNumbers)
+  myCorpus = tm_map(myCorpus, removeWords,
+                    c(stopwords("english"), 
+                      "flight", "airplane", "united", "alaska", "allegiant", "plane",
+                      "spirit", "delta", "american", "airlines", "virgin", "america",
+                      "hawaiian", "frontier", "flights", "airline"))
+  
+  myDTM = TermDocumentMatrix(myCorpus,
+                             control = list(minWordLength = 1))
+  
+  m = as.matrix(myDTM)
+  
+  sort(rowSums(m), decreasing = TRUE)
+  }
+  
+  if (type == 'negative') {
+    text = readLines(paste(c(company, '_neg.txt'), collapse = ''),
+                      encoding="UTF-8")
+    
+    myCorpus = Corpus(VectorSource(text))
+    myCorpus = tm_map(myCorpus, content_transformer(tolower))
+    myCorpus = tm_map(myCorpus, removePunctuation)
+    myCorpus = tm_map(myCorpus, removeNumbers)
+    myCorpus = tm_map(myCorpus, removeWords,
+                      c(stopwords("english"), 
+                        "flight", "airplane", "united", "alaska", "allegiant", "plane",
+                        "spirit", "delta", "american", "airlines", "virgin", "america",
+                        "hawaiian", "frontier", "flights", "airline"))
+    
+    myDTM = TermDocumentMatrix(myCorpus,
+                               control = list(minWordLength = 1))
+    
+    m = as.matrix(myDTM)
+    
+    sort(rowSums(m), decreasing = TRUE)
+  }
+})
+
+
+
+
+
+
