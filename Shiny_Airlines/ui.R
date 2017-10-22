@@ -20,6 +20,7 @@ shinyUI(dashboardPage(
                      image = "https://yt3.ggpht.com/-04uuTMHfDz4/AAAAAAAAAAI/AAAAAAAAAAA/Kjeupp-eNNg/s100-c-k-no-rj-c0xffffff/photo.jpg"),
     sidebarMenu(
       menuItem("Background", tabName = 'background', icon = icon('plane')),
+      menuItem("Data Collection", tabName = 'scraping', icon = icon('search')),
       menuItem('Question 1', tabName = 'question1', icon = icon('lightbulb-o')),
       menuItem('Question 2', tabName = 'question2', icon = icon('lightbulb-o')),
       menuItem('Question 3', tabName = 'question3', icon = icon('lightbulb-o')),
@@ -61,36 +62,64 @@ shinyUI(dashboardPage(
                                                      itself apart from the crowd by striving to have an effective, reliable, and user-friendly
                                                      mobile platform."),
                                                   width = 12))),
+      tabItem(tabName = 'scraping', fluidRow(box(tags$div(class = "header",
+                                                          tags$h4("Web Scraping with Selenium")), width = 12),
+                                             align = 'center'),
+                                    fluidRow(box(width = 12))),
       tabItem(tabName = 'question1', fluidRow(box(tags$div(class = "header",
                                                       tags$h4("Which aspects of a flight most positively and most negatively 
                                                                   affect a customers' overall rating of an airline?")), width = 12),
                                                       align = 'center'),
-                                      fluidRow(radioButtons('button0', 'Data to show:', c('Raw (includes NAs)', 'Median-imputed'),
+                                      fluidRow(radioButtons('button0', 'Data to show:', c('Raw (includes NAs)', 'Middle rating imputed'),
                                                             selected = 'Raw (includes NAs)'), align = 'center'),
                                       fluidRow(conditionalPanel("input.button0 == 'Raw (includes NAs)'",
                                                       box(plotOutput('ppos'), width = 6), 
                                                       box(plotOutput('pneg'), width = 6)),
-                                               conditionalPanel("input.button0 == 'Median-imputed'",
+                                               conditionalPanel("input.button0 == 'Middle rating imputed'",
                                                       box(plotOutput('pimppos'), width = 6), 
-                                                      box(plotOutput('pimpneg'), width = 6)))),
+                                                      box(plotOutput('pimpneg'), width = 6))),
+                                      fluidRow(box(p("The above plots are based on the results of running a Pearson Chi-square
+                                                     test of independence on each combination of the variables: aircraft type,
+                                                     overall rating, traveller type, cabin, seat comfort, cabin service, food
+                                                     and beverages, inflight entertainment, ground service, value for money, and
+                                                     recommended. The degree of shading for a combination depends on the resulting
+                                                     p-value from this test."),
+                                                   p('NOTE: Nearly all of the p-values in all of the above tables fall into the 
+                                                     category of "statistically significant." Using the widely-agreed-upon industry 
+                                                     standard of claiming significance for p-values less than 0.05 leads to the
+                                                     correct but unhelpful conclusion that a flyer\' overall impression of an airline
+                                                     is dependent on nearly every aspect of a flight. For this reason, the above plots
+                                                     separate the small p-values into bins of size 1e-50 so that differentiation
+                                                     between different flight aspects can be done to some degree based on the order of 
+                                                     magnitude of their chi-square test p-values.'),
+                                                   width = 12))),
+                                                   # tags$div(
+                                                   #   tags$ul(
+                                                   #     tags$li("Airline: Name of"),
+                                                   #     tags$li("Overall Rating (1-10)"),
+                                                   #     tags$li("Aircraft"),
+                                                   #     tags$li("Traveller Type"),
+                                                   #     tags$li("Cabin"),
+                                                   #     
+                                                   #   )
+                                                   # )), width = 12)),
       tabItem(tabName = 'question2', fluidRow(box(tags$div(class = "header", 
                                                            tags$h4("How are US airlines performing across different aspects
                                                                       of customer flight experience?")),
                                                               width = 12), align = 'center'),
-                      fluidRow(radioButtons('button', 'Data to show:', c('Raw (includes NAs)', 'Median-imputed'),
+                      fluidRow(radioButtons('button', 'Data to show:', c('Raw (includes NAs)', 'Middle rating imputed'),
                                     selected = 'Raw (includes NAs)'),
-                              selectInput('selected2', 'Flight Feature', features,
+                              selectInput('selected2', 'Flight feature:', features,
                                     selected = 'seat_comfort'), align = 'center'),
-                      # fluidRow(box(plotOutput('facets_raw'), width = 12, height = 500)),
-                      # fluidRow(box(plotOutput('pie_raw'), width = 12))),
                       fluidRow(conditionalPanel("input.button == 'Raw (includes NAs)'",
                                                 box(plotOutput('facets_raw'), width = 12)),
-                               conditionalPanel("input.button == 'Median-imputed'",
+                               conditionalPanel("input.button == 'Middle rating imputed'",
                                          box(plotOutput('facets_imputed'), width = 12))),
-                      fluidRow(conditionalPanel("input.button == 'Raw (includes NAs)'",
-                                                box(plotOutput('pie_raw'), width = 12)),
-                               conditionalPanel("input.button == 'Median-imputed'",
-                                                box(plotOutput('pie_imputed'), width = 12)))),
+                      fluidRow(box(plotOutput('features'), width = 12))),
+                      # fluidRow(conditionalPanel("input.button == 'Raw (includes NAs)'",
+                      #                           box(plotOutput('pie_raw'), width = 12)),
+                      #          conditionalPanel("input.button == 'Middle rating imputed'",
+                      #                           box(plotOutput('pie_imputed'), width = 12)))),
       tabItem(tabName = 'question3', fluidRow(box(tags$div(class = "header", 
                                                            tags$h4("What words come up most frequently in 
                                                                    negative reviews? In positive reviews?")), width = 12),

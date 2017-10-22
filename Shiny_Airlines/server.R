@@ -44,13 +44,14 @@ shinyServer(function(input, output, session) {
     ggplot(data = holder_raw, aes_string(x = input$selected2, y = "percent")) + 
       geom_bar(aes_string(fill = input$selected2), stat = 'identity') + 
       facet_wrap( ~ airline, nrow = 2) +
-      xlab("Rating") + ylab("Percent of Reviews") + theme_minimal() +
-      ggtitle("Ratings by Airline") +
+      scale_fill_brewer(palette = "RdPu") +
+      xlab("Rating") + ylab("Percent of reviews") + theme_minimal() +
+      ggtitle("Percents of feature ratings") +
       guides(fill=guide_legend(title="Rating")) +
       theme(panel.spacing = unit(2, "lines"),
-            plot.title = element_text(size = 20, face = "bold"),
+            plot.title = element_text(size = 20),
             axis.text=element_text(size=12),
-            axis.title=element_text(size=14,face="bold"))
+            axis.title=element_text(size=14))
   })
   
   output$facets_imputed = renderPlot({
@@ -61,13 +62,18 @@ shinyServer(function(input, output, session) {
     ggplot(data = holder_imputed, aes_string(x = input$selected2, y = "percent")) + 
       geom_bar(aes_string(fill = input$selected2), stat = 'identity') + 
       facet_wrap( ~ airline, nrow = 2) +
-      xlab("Rating") + ylab("Percent of Reviews") + theme_minimal() +
-      ggtitle("Ratings by Airline") +
+      scale_fill_brewer(palette = "RdPu") +
+      xlab("Rating") + ylab("Percent of reviews") + theme_minimal() +
+      ggtitle("Ratings by airline") +
       guides(fill=guide_legend(title="Rating")) +
       theme(panel.spacing = unit(2, "lines"),
-            plot.title = element_text(size = 20, face = "bold"),
+            plot.title = element_text(size = 20),
             axis.text=element_text(size=12),
-            axis.title=element_text(size=14,face="bold"))
+            axis.title=element_text(size=14))
+  })
+  
+  output$features = renderPlot({
+    response_plot
   })
   
   # output$pie_raw = renderPlot({
@@ -75,7 +81,9 @@ shinyServer(function(input, output, session) {
   #     group_by_(input$selected2) %>% summarise(n = n()) %>% 
   #     mutate(percent = n*100/sum(n))
   #   ggplot(data = temp_raw, aes_string(x = "", y = "percent", fill = input$selected2)) +
-  #     geom_bar(width = 1, stat = 'identity') + coord_polar(theta = 'y') +
+  #     geom_bar(width = 1, stat = 'identity') + 
+  #     coord_polar(theta = 'y') +
+  #     scale_fill_brewer(palette = "RdPu") +
   #     theme_minimal() + guides(fill=guide_legend(title="Rating")) +
   #     ggtitle("Percentage of Ratings Overall")
   # })
@@ -85,7 +93,9 @@ shinyServer(function(input, output, session) {
   #     group_by_(input$selected2) %>% summarise(n = n()) %>% 
   #     mutate(percent = n*100/sum(n))
   #   ggplot(data = temp_imputed, aes_string(x = "", y = "percent", fill = input$selected2)) +
-  #     geom_bar(width = 1, stat = 'identity') + coord_polar(theta = 'y') +
+  #     geom_bar(width = 1, stat = 'identity') + 
+  #     coord_polar(theta = 'y') +
+  #     scale_fill_brewer(palette = "RdPu")
   #     theme_minimal() + guides(fill=guide_legend(title="Rating")) +
   #     ggtitle("Percentage of Ratings Overall")
   # })

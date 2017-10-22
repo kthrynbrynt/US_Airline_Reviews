@@ -10,6 +10,7 @@ library("wordcloud") # word cloud generator
 library('wordcloud2') #word cloud generator2
 library(memoise)
 
+airlines_raw = read.csv('~/Dropbox/NYCDSA/US_Airline_Reviews/US_airline_reviews2.csv')
 airlines = read.csv('~/Dropbox/NYCDSA/US_Airline_Reviews/US_airline_reviews2.csv')
 airlines_imputed = read.csv('~/Dropbox/NYCDSA/US_Airline_Reviews/US_airline_reviews2.csv')  
 
@@ -27,10 +28,25 @@ airlines$value_for_money = as.factor(airlines$value_for_money)
 # For airlines_imputed, remove rogue line
 airlines_imputed = airlines_imputed %>% filter(airline != "http://www.airlinequality.com/airline-reviews/american-airlines/")
 
-# Impute to missing values based on median
-class(airlines_imputed$seat_comfort)
-pre = preProcess(airlines_imputed, method = "medianImpute") 
-airlines_imputed = predict(pre, airlines_imputed)
+# missing.data$x2[is.na(missing.data$x2)] = mean(missing.data$x2, na.rm=TRUE)
+
+names(which(colSums(is.na(airlines_imputed))>0))
+# "overall" "seat_comfort" "cabin_service" "food_bev"
+# "entertainment" "ground_service" "value_for_money"
+
+# Impute the median rating *option*
+airlines_imputed$overall[is.na(airlines_imputed$overall)] = 6
+airlines_imputed$seat_comfort[is.na(airlines_imputed$seat_comfort)] = 3
+airlines_imputed$cabin_service[is.na(airlines_imputed$cabin_service)] = 3
+airlines_imputed$food_bev[is.na(airlines_imputed$food_bev)] = 3
+airlines_imputed$entertainment[is.na(airlines_imputed$entertainment)] = 3
+airlines_imputed$ground_service[is.na(airlines_imputed$ground_service)] = 3
+airlines_imputed$value_for_money[is.na(airlines_imputed$value_for_money)] = 3
+
+# Alternative imputation (median):
+# class(airlines_imputed$seat_comfort)
+# pre = preProcess(airlines_imputed, method = "medianImpute") 
+# airlines_imputed = predict(pre, airlines_imputed)
 
 # Turn numeric-like categorical variables into factors
 airlines_imputed$overall = as.factor(airlines_imputed$overall)
@@ -111,6 +127,23 @@ features = c("cabin_service", "entertainment", "food_bev", "ground_service", "ov
 
 # Computing impacts of NAs
 
+airlines_raw_cat = airlines_raw %>% select(cabin_service, entertainment, food_bev, ground_service,
+                                           overall, seat_comfort, value_for_money)
+
+care_vars = colMeans(1-is.na(airlines_raw_cat))
+
+var_responses = data.frame(X = 1:7, percent_resp = care_vars, vars = names(airlines_raw_cat))
+
+response_plot = ggplot(var_responses, aes(x = vars, y = percent_resp)) + 
+  geom_bar(aes(fill = vars), stat = 'identity') + 
+  scale_fill_brewer(palette = "RdPu") + 
+  theme_minimal() + ggtitle("Industry response across features") +
+  xlab("Feature") + ylab("Percent of responses") + 
+  theme(axis.text.x=element_text(angle=45,hjust=1),
+      plot.title = element_text(size = 20),
+      axis.text=element_text(size=12),
+      axis.title=element_text(size=14))
+
 
 # 
 # seat_comfort_NA = airlines %>% group_by(airline, seat_comfort) %>%
@@ -130,12 +163,12 @@ features = c("cabin_service", "entertainment", "food_bev", "ground_service", "ov
 #   mutate(percent = n*100/sum(n))
 # 
 # 
-# sc= ggplot(data = seat_comfort_overall, aes(x = "", y = percent, fill = seat_comfort)) +
+# ggplot(data = seat_comfort_overall, aes(x = "", y = percent, fill = seat_comfort)) +
 #   geom_bar(width = 1, stat = 'identity') + coord_polar(theta = 'y') +
 #   theme_minimal() + guides(fill=guide_legend(title="Seat Comfort Rating")) +
 #   ggtitle("Percentages of Seat Comfort Ratings Overall") 
 # 
-# sc
+# 
 
 ##################################################################################
 ##################################################################################
@@ -224,7 +257,7 @@ write.table(virgin_neg$customer_review,"virgin_neg.txt",sep="\t",row.names=FALSE
 # Question 1: Analyzing Chi-square p-values across all combos of categorical variables
 
 
-airlines_categorical = airlines %>% select(-X,-author, -review_date,
+airlines_categorical = airlines %>% select(-airline, -author, -review_date,
                                            -customer_review, -route, -date_flown)
 
 air_cat_positive = airlines_categorical %>% filter(overall %in% c('6','7', '8', '9', '10'))
@@ -264,21 +297,23 @@ p_pos = ggplot(data = pvalues_pos, aes(x=Var1, y=Var2)) +
   geom_tile(aes(fill = ranges), colour = "white", alpha = .8) +
   scale_fill_brewer(palette = "RdPu") + theme_classic() +
   xlab("") + ylab("")+ ggtitle("Chi-square p-values: Positive Reviews") +
-  guides(fill=guide_legend(title="p-value"))
+  guides(fill=guide_legend(title="p-value")) +
+  theme(axis.text.x=element_text(angle=45,hjust=1))
 
 
 p_neg = ggplot(data = pvalues_neg, aes(x=Var1, y=Var2, fill=value)) + 
   geom_tile(aes(fill = ranges), colour = "white", alpha = .8) +
   scale_fill_brewer(palette = "RdPu") + theme_classic() +
   xlab("") + ylab("") + ggtitle("Chi-square p-values: Negative Reviews") +
-  guides(fill=guide_legend(title="p-value"))
+  guides(fill=guide_legend(title="p-value")) +
+  theme(axis.text.x=element_text(angle=45,hjust=1))
 
 
 
 
 # Now to do the above for the 'imputed' version
 
-categorical_imputed = airlines_imputed %>% select(-X,-author, -review_date,
+categorical_imputed = airlines_imputed %>% select(-airline, -author, -review_date,
                                            -customer_review, -route, -date_flown)
 
 cat_imp_positive = categorical_imputed %>% filter(overall %in% c('6','7', '8', '9', '10'))
@@ -315,14 +350,16 @@ p_imp_pos = ggplot(data = pvalues_imp_pos, aes(x=Var1, y=Var2)) +
   geom_tile(aes(fill = ranges), colour = "white", alpha = .8) +
   scale_fill_brewer(palette = "RdPu") + theme_classic() +
   xlab("") + ylab("")+ ggtitle("Chi-square p-values: Positive Reviews") +
-  guides(fill=guide_legend(title="p-value"))
+  guides(fill=guide_legend(title="p-value")) +
+  theme(axis.text.x=element_text(angle=45,hjust=1))
 
 
 p_imp_neg = ggplot(data = pvalues_imp_neg, aes(x=Var1, y=Var2, fill=value)) + 
   geom_tile(aes(fill = ranges), colour = "white", alpha = .8) +
   scale_fill_brewer(palette = "RdPu") + theme_classic() +
   xlab("") + ylab("") + ggtitle("Chi-square p-values: Negative Reviews") +
-  guides(fill=guide_legend(title="p-value"))
+  guides(fill=guide_legend(title="p-value")) +
+  theme(axis.text.x=element_text(angle=45,hjust=1))
 
 
 
