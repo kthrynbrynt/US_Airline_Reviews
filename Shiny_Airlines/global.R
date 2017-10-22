@@ -138,7 +138,7 @@ response_plot = ggplot(var_responses, aes(x = vars, y = percent_resp)) +
   geom_bar(aes(fill = vars), stat = 'identity') + 
   scale_fill_brewer(palette = "RdPu") + 
   theme_minimal() + ggtitle("Industry response across features") +
-  xlab("Feature") + ylab("Percent of responses") + 
+  xlab("Feature") + ylab("Percent of responses including feature") + 
   theme(axis.text.x=element_text(angle=45,hjust=1),
       plot.title = element_text(size = 20),
       axis.text=element_text(size=12),
