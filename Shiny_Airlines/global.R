@@ -10,8 +10,8 @@ library("wordcloud") # word cloud generator
 library('wordcloud2') #word cloud generator2
 library(memoise)
 
-airlines = read.csv('~/Dropbox/NYCDSA/US_Airline_Reviews/US_airline_reviews.csv')
-airlines_imputed = read.csv('~/Dropbox/NYCDSA/US_Airline_Reviews/US_airline_reviews.csv')  
+airlines = read.csv('~/Dropbox/NYCDSA/US_Airline_Reviews/US_airline_reviews2.csv')
+airlines_imputed = read.csv('~/Dropbox/NYCDSA/US_Airline_Reviews/US_airline_reviews2.csv')  
 
 # Remove rogue line and turn numeric-like categorical variables into factors
 airlines = airlines %>% filter(airline != "http://www.airlinequality.com/airline-reviews/american-airlines/")
@@ -242,8 +242,8 @@ for(i in 1:k) {
 n <- ncol(air_cat_negative)
 result_neg <- matrix(1, nrow=n, ncol=n)
 rownames(result_neg) <- colnames(result_neg) <- names(air_cat_negative)
-for(i in 1:k) {
-  for(j in 1:k) {
+for(i in 1:n) {
+  for(j in 1:n) {
     result_neg[i,j] <- chisq.test(air_cat_negative[,i], air_cat_negative[,j] )$p.value
   }
 }
@@ -268,6 +268,57 @@ p_pos = ggplot(data = pvalues_pos, aes(x=Var1, y=Var2)) +
 
 
 p_neg = ggplot(data = pvalues_neg, aes(x=Var1, y=Var2, fill=value)) + 
+  geom_tile(aes(fill = ranges), colour = "white", alpha = .8) +
+  scale_fill_brewer(palette = "RdPu") + theme_classic() +
+  xlab("") + ylab("") + ggtitle("Chi-square p-values: Negative Reviews") +
+  guides(fill=guide_legend(title="p-value"))
+
+
+
+
+# Now to do the above for the 'imputed' version
+
+categorical_imputed = airlines_imputed %>% select(-X,-author, -review_date,
+                                           -customer_review, -route, -date_flown)
+
+cat_imp_positive = categorical_imputed %>% filter(overall %in% c('6','7', '8', '9', '10'))
+cat_imp_negative = categorical_imputed %>% filter(overall %in% c('1', '2', '3', '4', '5'))
+
+k_imp <- ncol(cat_imp_positive)
+result_imp_pos <- matrix(1, nrow=k_imp, ncol=k_imp)
+rownames(result_imp_pos) <- colnames(result_imp_pos) <- names(cat_imp_positive)
+for(i in 1:k_imp) {
+  for(j in 1:k_imp) {
+    result_imp_pos[i,j] <- chisq.test(cat_imp_positive[,i], cat_imp_positive[,j] )$p.value
+  }
+}
+
+n_imp <- ncol(cat_imp_negative)
+result_imp_neg <- matrix(1, nrow=n_imp, ncol=n_imp)
+rownames(result_imp_neg) <- colnames(result_imp_neg) <- names(cat_imp_negative)
+for(i in 1:n_imp) {
+  for(j in 1:n_imp) {
+    result_imp_neg[i,j] <- chisq.test(cat_imp_negative[,i], cat_imp_negative[,j] )$p.value
+  }
+}
+
+
+pvalues_imp_pos = melt(result_imp_pos)
+pvalues_imp_neg = melt(result_imp_neg)
+
+pvalues_imp_pos$ranges <- cut(pvalues_imp_pos$value, breaks = c(-Inf, 1e-300, 1e-250, 1e-200,
+                                                        1e-150, 1e-100, 1e-50, 0, .01, .05, .1, Inf),right = FALSE)
+pvalues_imp_neg$ranges <- cut(pvalues_imp_neg$value, breaks = c(-Inf, 1e-300, 1e-250, 1e-200,
+                                                        1e-150, 1e-100, 1e-50, 0, .01, .05, .1, Inf),right = FALSE)
+
+p_imp_pos = ggplot(data = pvalues_imp_pos, aes(x=Var1, y=Var2)) + 
+  geom_tile(aes(fill = ranges), colour = "white", alpha = .8) +
+  scale_fill_brewer(palette = "RdPu") + theme_classic() +
+  xlab("") + ylab("")+ ggtitle("Chi-square p-values: Positive Reviews") +
+  guides(fill=guide_legend(title="p-value"))
+
+
+p_imp_neg = ggplot(data = pvalues_imp_neg, aes(x=Var1, y=Var2, fill=value)) + 
   geom_tile(aes(fill = ranges), colour = "white", alpha = .8) +
   scale_fill_brewer(palette = "RdPu") + theme_classic() +
   xlab("") + ylab("") + ggtitle("Chi-square p-values: Negative Reviews") +

@@ -34,14 +34,45 @@ shinyUI(dashboardPage(
     tabItems(
       tabItem(tabName = 'background', fluidRow(box(tags$div(class = "header", 
                                                       tags$h3("Increasing Customer Satisfaction
-                                                            in the Airline Industry")), width = 12), 
-                                               align = 'center')),
+                                                            in the Airline Industry")), width = 12),
+                                               align = 'center'),
+                                      fluidRow(box(p("The sheer size of the airline industry provides a reason to care about it: 
+                                                          it affects not only millions of people directly (flyers), but also millions 
+                                                          more indirectly (non-flyers) by the heft of its economic presence. In a 
+                                                          December 2016 report, the International Air Transport Association (IATA) writes:"),
+                                                   p('"While airline industry profits are expected to have reached a cyclical peak in 
+                                                     2016 of $35.6 billion, a soft landing in profitable territory is expected in 2017 
+                                                     with a net profit of $29.8 billion. 2017 is expected to be the eighth year in a 
+                                                     row of aggregate airline profitability, illustrating the resilience to shocks that 
+                                                     have been built into the industry structure. On average, airlines will retain $7.54
+                                                     for every passenger carried."'),
+                                                   p("As a resident of the US and semi-frequent flyer, the US airline industry is of 
+                                                     particular interest to me. In looking at carriers by region, the IATA concludes:"),
+                                                   p('"The strongest financial performance is being delivered by airlines in North America. 
+                                                     Net post-tax profits will be the highest at $18.1 billion next year [...].The net margin 
+                                                     for the region’s carriers is also expected to be the strongest at 8.5% with an average 
+                                                     profit of $19.58/passenger."'),
+                                                   p("Although the North American airline industry is strong, it must be ever-vigilant about 
+                                                     keeping up with customer demands in order to maintain its continued growth and its 
+                                                     continued position as regional industry leader. From the standpoint of a specific airline, 
+                                                     knowing which areas the industry as a whole is struggling with can present an opportunity
+                                                     to become an industry leader in one or more specific realms. For example, if customers  
+                                                     consistently complain about mobile technology industry-wide, a single airline could set 
+                                                     itself apart from the crowd by striving to have an effective, reliable, and user-friendly
+                                                     mobile platform."),
+                                                  width = 12))),
       tabItem(tabName = 'question1', fluidRow(box(tags$div(class = "header",
                                                       tags$h4("Which aspects of a flight most positively and most negatively 
                                                                   affect a customers' overall rating of an airline?")), width = 12),
                                                       align = 'center'),
-                                      fluidRow(box(plotOutput('ppos'), width = 6), 
-                                                box(plotOutput('pneg'), width = 6))),
+                                      fluidRow(radioButtons('button0', 'Data to show:', c('Raw (includes NAs)', 'Median-imputed'),
+                                                            selected = 'Raw (includes NAs)'), align = 'center'),
+                                      fluidRow(conditionalPanel("input.button0 == 'Raw (includes NAs)'",
+                                                      box(plotOutput('ppos'), width = 6), 
+                                                      box(plotOutput('pneg'), width = 6)),
+                                               conditionalPanel("input.button0 == 'Median-imputed'",
+                                                      box(plotOutput('pimppos'), width = 6), 
+                                                      box(plotOutput('pimpneg'), width = 6)))),
       tabItem(tabName = 'question2', fluidRow(box(tags$div(class = "header", 
                                                            tags$h4("How are US airlines performing across different aspects
                                                                       of customer flight experience?")),
@@ -83,3 +114,13 @@ shinyUI(dashboardPage(
   )
 )
 )
+
+
+
+
+
+
+
+
+
+ 

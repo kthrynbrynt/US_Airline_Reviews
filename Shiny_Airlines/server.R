@@ -27,6 +27,14 @@ shinyServer(function(input, output, session) {
     p_neg
   })
   
+  output$pimppos = renderPlot({
+    p_imp_pos
+  })
+  
+  output$pimpneg = renderPlot({
+    p_imp_neg
+  })
+  
   output$facets_raw = renderPlot({
     holder_raw = airlines %>% group_by_("airline", input$selected2) %>%
       summarise(n = n()) %>%
@@ -62,25 +70,25 @@ shinyServer(function(input, output, session) {
             axis.title=element_text(size=14,face="bold"))
   })
   
-  output$pie_raw = renderPlot({
-    temp_raw = airlines %>% filter(airline != 'Southwest Airlines') %>%
-      group_by_(input$selected2) %>% summarise(n = n()) %>% 
-      mutate(percent = n*100/sum(n))
-    ggplot(data = temp_raw, aes_string(x = "", y = "percent", fill = input$selected2)) +
-      geom_bar(width = 1, stat = 'identity') + coord_polar(theta = 'y') +
-      theme_minimal() + guides(fill=guide_legend(title="Rating")) +
-      ggtitle("Percentage of Ratings Overall")
-  })
-  
-  output$pie_imputed = renderPlot({
-    temp_imputed = airlines_imputed %>% filter(airline != 'Southwest Airlines') %>%
-      group_by_(input$selected2) %>% summarise(n = n()) %>% 
-      mutate(percent = n*100/sum(n))
-    ggplot(data = temp_imputed, aes_string(x = "", y = "percent", fill = input$selected2)) +
-      geom_bar(width = 1, stat = 'identity') + coord_polar(theta = 'y') +
-      theme_minimal() + guides(fill=guide_legend(title="Rating")) +
-      ggtitle("Percentage of Ratings Overall")
-  })
+  # output$pie_raw = renderPlot({
+  #   temp_raw = airlines %>% filter(airline != 'Southwest Airlines') %>%
+  #     group_by_(input$selected2) %>% summarise(n = n()) %>% 
+  #     mutate(percent = n*100/sum(n))
+  #   ggplot(data = temp_raw, aes_string(x = "", y = "percent", fill = input$selected2)) +
+  #     geom_bar(width = 1, stat = 'identity') + coord_polar(theta = 'y') +
+  #     theme_minimal() + guides(fill=guide_legend(title="Rating")) +
+  #     ggtitle("Percentage of Ratings Overall")
+  # })
+  # 
+  # output$pie_imputed = renderPlot({
+  #   temp_imputed = airlines_imputed %>% filter(airline != 'Southwest Airlines') %>%
+  #     group_by_(input$selected2) %>% summarise(n = n()) %>% 
+  #     mutate(percent = n*100/sum(n))
+  #   ggplot(data = temp_imputed, aes_string(x = "", y = "percent", fill = input$selected2)) +
+  #     geom_bar(width = 1, stat = 'identity') + coord_polar(theta = 'y') +
+  #     theme_minimal() + guides(fill=guide_legend(title="Rating")) +
+  #     ggtitle("Percentage of Ratings Overall")
+  # })
 
 
   
@@ -102,7 +110,7 @@ shinyServer(function(input, output, session) {
   
   output$wc_pos = renderPlot({
     u <- terms_pos()
-    wordcloud_rep_pos(names(u), u, scale=c(4,0.3),
+    wordcloud_rep_pos(names(u), u, scale=c(3,0.3),
                       min.freq = input$freq, max.words=50,
                       colors=brewer.pal(8, "Blues"))
   })
@@ -126,7 +134,7 @@ shinyServer(function(input, output, session) {
 
   output$wc_neg = renderPlot({
     u <- terms_neg()
-    wordcloud_rep_neg(names(u), u, scale=c(4,0.3),
+    wordcloud_rep_neg(names(u), u, scale=c(3,0.3),
                   min.freq = input$freq, max.words=50,
                   colors=brewer.pal(8, "Reds"))
   })
