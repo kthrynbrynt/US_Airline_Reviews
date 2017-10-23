@@ -17,7 +17,10 @@ airlines_imputed_numerical = read.csv('~/Dropbox/NYCDSA/US_Airline_Reviews/US_ai
 airlines_imputed = read.csv('~/Dropbox/NYCDSA/US_Airline_Reviews/US_airline_reviews3.csv')  
 
 # Remove rogue line and turn numeric-like categorical variables into factors
+airlines_raw = airlines_raw %>% filter(airline != "http://www.airlinequality.com/airline-reviews/american-airlines/")
 airlines = airlines %>% filter(airline != "http://www.airlinequality.com/airline-reviews/american-airlines/")
+airlines_imputed_numerical = airlines_imputed_numerical %>% filter(airline != "http://www.airlinequality.com/airline-reviews/american-airlines/")
+airlines_imputed = airlines_imputed %>% filter(airline != "http://www.airlinequality.com/airline-reviews/american-airlines/")
 #airlines = airlines %>% select(-X)
 airlines$overall = as.factor(airlines$overall)
 airlines$seat_comfort = as.factor(airlines$seat_comfort)
@@ -152,6 +155,15 @@ airlines$value_for_money[is.na(airlines$value_for_money)] = "NA"
 features = c("cabin_service", "entertainment", "food_bev", "ground_service", 
              "seat_comfort", "value_for_money")
 
+# NOTE: The correlation between overall and value_for_money is very high for all
+#       data sets in question. Therefore, we omit 'value_for_money'.
+# > cor(air_complete$overall, air_complete$value_for_money)
+# [1] 0.9120274
+# > cor(air_imputed_numerical_3$overall, air_imputed_numerical_3$value_for_money)
+# [1] 0.8610945
+# > cor(air_imputed_mean$overall, air_imputed_mean$value_for_money)
+# [1] 0.8907861
+
 # Approach 1:Computing Relative importance in multiple linear model of 'overall'
 
 # For air_imputed_numerical_3:
@@ -159,9 +171,9 @@ myimp_3 = calc.relimp(overall ~., data = air_imputed_numerical_3)
 summary(lm(overall ~ ., data = air_imputed_numerical_3))
 myimp_3@lmg/sum(myimp_3@lmg)
 
-impvec_3 = c(00.17038122, 0.05867514, 0.09811587, 0.17298709, 0.16546550, 0.33437518) 
+impvec_3 = c(00.17038122, 0.05867514, 0.09811587, 0.17298709, 0.16546550) 
 impact_3 = data.frame(feature = c("cabin_service", "entertainment", "food_bev", "ground_service",
-                                  "seat_comfort", "value_for_money"), imp = impvec_3)
+                                  "seat_comfort"), imp = impvec_3)
 
 impact_plot_3 = ggplot(data = impact_3, aes(x = feature, y = imp)) + 
   geom_bar(aes(fill = feature), stat = 'identity') + 
@@ -181,9 +193,9 @@ myimp_mean = calc.relimp(overall ~., data = air_imputed_mean)
 summary(lm(overall ~ ., data = air_imputed_mean))
 myimp_mean@lmg/sum(myimp_mean@lmg)
 
-impvec_mean = c(0.17558693, 0.06837641, 0.11472528, 0.12867938, 0.15639555, 0.35623645)
+impvec_mean = c(0.17558693, 0.06837641, 0.11472528, 0.12867938, 0.15639555)
 impact_mean = data.frame(feature = c("cabin_service", "entertainment", "food_bev", "ground_service",
-                                     "seat_comfort", "value_for_money"), imp = impvec_mean)
+                                     "seat_comfort"), imp = impvec_mean)
 
 impact_plot_mean = ggplot(data = impact_mean, aes(x = feature, y = imp)) + 
   geom_bar(aes(fill = feature), stat = 'identity') + 
@@ -202,9 +214,9 @@ myimp_comp = calc.relimp(overall ~., data = air_complete)
 summary(lm(overall ~ ., data = air_complete))
 myimp_comp@lmg/sum(myimp_comp@lmg)
 
-impvec_comp = c(0.1315520, 0.1228263, 0.1387163, 0.1930213, 0.1486761, 0.2652080)
+impvec_comp = c(0.1315520, 0.1228263, 0.1387163, 0.1930213, 0.1486761)
 impact_comp = data.frame(feature = c("cabin_service", "entertainment", "food_bev", "ground_service",
-                                     "seat_comfort", "value_for_money"), imp = impvec_comp)
+                                     "seat_comfort"), imp = impvec_comp)
 
 impact_plot_comp = ggplot(data = impact_comp, aes(x = feature, y = imp)) + 
   geom_bar(aes(fill = feature), stat = 'identity') + 
@@ -222,9 +234,9 @@ impact_plot_comp = ggplot(data = impact_comp, aes(x = feature, y = imp)) +
 # Approach 2: Using percentage of responses to determine relative importance
 
 airlines_raw_cat = airlines_raw[, c("cabin_service", "entertainment", "food_bev", "ground_service", 
-                                    "seat_comfort", "value_for_money")]
+                                    "seat_comfort")]
 care_vars = colMeans(1-is.na(airlines_raw_cat))
-var_responses = data.frame(X = 1:6, percent_resp = care_vars, vars = names(airlines_raw_cat))
+var_responses = data.frame(X = 1:5, percent_resp = care_vars, vars = names(airlines_raw_cat))
 
 response_plot = ggplot(var_responses, aes(x = vars, y = percent_resp)) + 
   geom_bar(aes(fill = vars), stat = 'identity') + 
@@ -365,7 +377,7 @@ getTermMatrixPos <- memoise(function(company) {
                     c(stopwords("english"), 
                       "flight", "airplane", "united", "alaska", "allegiant", "plane",
                       "spirit", "delta", "american", "airlines", "virgin", "america",
-                      "hawaiian", "frontier", "flights", "airline"))
+                      "hawaiian", "frontier", "flights", "airline", "jetblue"))
   
   myDTM = TermDocumentMatrix(myCorpus,
                              control = list(minWordLength = 1))
@@ -390,7 +402,7 @@ getTermMatrixNeg <- memoise(function(company) {
                     c(stopwords("english"), 
                       "flight", "airplane", "united", "alaska", "allegiant", "plane",
                       "spirit", "delta", "american", "airlines", "virgin", "america",
-                      "hawaiian", "frontier", "flights", "airline"))
+                      "hawaiian", "frontier", "flights", "airline", "jetblue"))
   
   myDTM = TermDocumentMatrix(myCorpus,
                              control = list(minWordLength = 1))

@@ -83,19 +83,27 @@ shinyServer(function(input, output, session) {
       geom_bar(aes_string(fill = input$selected2), width = 1, stat = 'identity') +
       theme_minimal() + scale_fill_brewer(palette = "RdPu") +
       guides(fill=guide_legend(title="Rating")) +
-      ggtitle("Percentage of Ratings Overall")
+      xlab(paste(c(input$selected2, "rating"), collapse = ' ')) +
+      ylab("Percent of total ratings") +
+      ggtitle("Feature percentages overall") + 
+      theme(plot.title = element_text(size = 20),
+            axis.text=element_text(size=12),
+            axis.title=element_text(size=14))
   })
 
-  output$pie_imputed = renderPlot({
-    temp_imputed = airlines_imputed %>% filter(airline != 'Southwest Airlines') %>%
-      group_by_(input$selected2) %>% summarise(n = n()) %>%
-      mutate(percent = n*100/sum(n))
-    ggplot(data = temp_imputed, aes_string(x = input$selected2, y = "percent")) +
-      geom_bar(aes_string(fill = input$selected2), width = 1, stat = 'identity') +
-      theme_minimal() + scale_fill_brewer(palette = "RdPu") +
-      guides(fill=guide_legend(title="Rating")) +
-      ggtitle("Percentage of Ratings Overall")
-  })
+  # output$pie_imputed = renderPlot({
+  #   temp_imputed = airlines_imputed %>% filter(airline != 'Southwest Airlines') %>%
+  #     group_by_(input$selected2) %>% summarise(n = n()) %>%
+  #     mutate(percent = n*100/sum(n))
+  #   ggplot(data = temp_imputed, aes_string(x = input$selected2, y = "percent")) +
+  #     geom_bar(aes_string(fill = input$selected2), width = 1, stat = 'identity') +
+  #     theme_minimal() + scale_fill_brewer(palette = "RdPu") +
+  #     guides(fill=guide_legend(title="Rating")) +
+  #     ggtitle("Percentage of Ratings Overall") + 
+  #     theme(plot.title = element_text(size = 20),
+  #           axis.text=element_text(size=12),
+  #           axis.title=element_text(size=14))
+  # })
   # ggplot(data = seat_comfort_overall, aes(x = seat_comfort, y = percent)) +
   #   geom_bar(aes(fill = seat_comfort), width = 1, stat = 'identity') +
   #   theme_minimal() + guides(fill=guide_legend(title="Seat Comfort Rating")) +
