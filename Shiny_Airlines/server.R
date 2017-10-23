@@ -19,20 +19,20 @@ library(grid)
 shinyServer(function(input, output, session) {
 
 
-  output$ppos = renderPlot({
-    p_pos
+  output$imp3 = renderPlot({
+    impact_plot_3
   })
   
-  output$pneg = renderPlot({
-    p_neg
+  output$impmean = renderPlot({
+    impact_plot_mean
   })
   
-  output$pimppos = renderPlot({
-    p_imp_pos
+  output$impcomp = renderPlot({
+    impact_plot_comp
   })
   
-  output$pimpneg = renderPlot({
-    p_imp_neg
+  output$features = renderPlot({
+    response_plot
   })
   
   output$facets_raw = renderPlot({
@@ -72,34 +72,35 @@ shinyServer(function(input, output, session) {
             axis.title=element_text(size=14))
   })
   
-  output$features = renderPlot({
-    response_plot
-  })
   
-  # output$pie_raw = renderPlot({
-  #   temp_raw = airlines %>% filter(airline != 'Southwest Airlines') %>%
-  #     group_by_(input$selected2) %>% summarise(n = n()) %>% 
-  #     mutate(percent = n*100/sum(n))
-  #   ggplot(data = temp_raw, aes_string(x = "", y = "percent", fill = input$selected2)) +
-  #     geom_bar(width = 1, stat = 'identity') + 
-  #     coord_polar(theta = 'y') +
-  #     scale_fill_brewer(palette = "RdPu") +
-  #     theme_minimal() + guides(fill=guide_legend(title="Rating")) +
-  #     ggtitle("Percentage of Ratings Overall")
-  # })
-  # 
-  # output$pie_imputed = renderPlot({
-  #   temp_imputed = airlines_imputed %>% filter(airline != 'Southwest Airlines') %>%
-  #     group_by_(input$selected2) %>% summarise(n = n()) %>% 
-  #     mutate(percent = n*100/sum(n))
-  #   ggplot(data = temp_imputed, aes_string(x = "", y = "percent", fill = input$selected2)) +
-  #     geom_bar(width = 1, stat = 'identity') + 
-  #     coord_polar(theta = 'y') +
-  #     scale_fill_brewer(palette = "RdPu")
-  #     theme_minimal() + guides(fill=guide_legend(title="Rating")) +
-  #     ggtitle("Percentage of Ratings Overall")
-  # })
+  
+  
+  output$pie_raw = renderPlot({
+    temp_raw = airlines %>% filter(airline != 'Southwest Airlines') %>%
+      group_by_(input$selected2) %>% summarise(n = n()) %>%
+      mutate(percent = n*100/sum(n))
+    ggplot(data = temp_raw, aes_string(x = input$selected2, y = "percent")) +
+      geom_bar(aes_string(fill = input$selected2), width = 1, stat = 'identity') +
+      theme_minimal() + scale_fill_brewer(palette = "RdPu") +
+      guides(fill=guide_legend(title="Rating")) +
+      ggtitle("Percentage of Ratings Overall")
+  })
 
+  output$pie_imputed = renderPlot({
+    temp_imputed = airlines_imputed %>% filter(airline != 'Southwest Airlines') %>%
+      group_by_(input$selected2) %>% summarise(n = n()) %>%
+      mutate(percent = n*100/sum(n))
+    ggplot(data = temp_imputed, aes_string(x = input$selected2, y = "percent")) +
+      geom_bar(aes_string(fill = input$selected2), width = 1, stat = 'identity') +
+      theme_minimal() + scale_fill_brewer(palette = "RdPu") +
+      guides(fill=guide_legend(title="Rating")) +
+      ggtitle("Percentage of Ratings Overall")
+  })
+  # ggplot(data = seat_comfort_overall, aes(x = seat_comfort, y = percent)) +
+  #   geom_bar(aes(fill = seat_comfort), width = 1, stat = 'identity') +
+  #   theme_minimal() + guides(fill=guide_legend(title="Seat Comfort Rating")) +
+  #   ggtitle("Percentages of Seat Comfort Ratings Overall") +
+  #   scale_fill_brewer(palette = "RdPu")
 
   
   # Define a reactive expression for the document term matrix
@@ -110,7 +111,7 @@ shinyServer(function(input, output, session) {
     isolate({
       withProgress({
         setProgress(message = "Processing corpus...")
-        getTermMatrix(input$selection, type = 'positive')
+        getTermMatrixPos(input$selection)
       })
     })
   })
@@ -134,7 +135,7 @@ shinyServer(function(input, output, session) {
     isolate({
       withProgress({
         setProgress(message = "Processing corpus...")
-        getTermMatrix(input$selection, type = 'negative')
+        getTermMatrixNeg(input$selection)
       })
     })
   })
