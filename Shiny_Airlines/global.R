@@ -11,16 +11,16 @@ library('wordcloud2') #word cloud generator2
 library(memoise)
 library(relaimpo)
 
-airlines_raw = read.csv('~/Dropbox/NYCDSA/US_Airline_Reviews/US_airline_reviews3.csv')
-airlines = read.csv('~/Dropbox/NYCDSA/US_Airline_Reviews/US_airline_reviews3.csv')
-airlines_imputed_numerical = read.csv('~/Dropbox/NYCDSA/US_Airline_Reviews/US_airline_reviews3.csv')
-airlines_imputed = read.csv('~/Dropbox/NYCDSA/US_Airline_Reviews/US_airline_reviews3.csv')  
+airlines_raw = read.csv('~/Dropbox/NYCDSA/US_Airline_Reviews/reviews_final.csv')
+airlines = read.csv('~/Dropbox/NYCDSA/US_Airline_Reviews/reviews_final.csv')
+airlines_imputed_numerical = read.csv('~/Dropbox/NYCDSA/US_Airline_Reviews/reviews_final.csv')
+airlines_imputed = read.csv('~/Dropbox/NYCDSA/US_Airline_Reviews/reviews_final.csv')  
 
 # Remove rogue line and turn numeric-like categorical variables into factors
-airlines_raw = airlines_raw %>% filter(airline != "http://www.airlinequality.com/airline-reviews/american-airlines/")
-airlines = airlines %>% filter(airline != "http://www.airlinequality.com/airline-reviews/american-airlines/")
-airlines_imputed_numerical = airlines_imputed_numerical %>% filter(airline != "http://www.airlinequality.com/airline-reviews/american-airlines/")
-airlines_imputed = airlines_imputed %>% filter(airline != "http://www.airlinequality.com/airline-reviews/american-airlines/")
+# airlines_raw = airlines_raw %>% filter(airline != "http://www.airlinequality.com/airline-reviews/american-airlines/")
+# airlines = airlines %>% filter(airline != "http://www.airlinequality.com/airline-reviews/american-airlines/")
+# airlines_imputed_numerical = airlines_imputed_numerical %>% filter(airline != "http://www.airlinequality.com/airline-reviews/american-airlines/")
+# airlines_imputed = airlines_imputed %>% filter(airline != "http://www.airlinequality.com/airline-reviews/american-airlines/")
 #airlines = airlines %>% select(-X)
 airlines$overall = as.factor(airlines$overall)
 airlines$seat_comfort = as.factor(airlines$seat_comfort)
@@ -38,9 +38,8 @@ air_complete = airlines_raw %>% filter(airline != "http://www.airlinequality.com
 
 air_complete = air_complete[complete.cases(air_complete), ]
 
-air_complete= air_complete[, c("cabin_service", "entertainment",
-                                                      "food_bev", "ground_service", "overall",
-                                                      "seat_comfort", "value_for_money")]
+air_complete= air_complete[, c("cabin_service", "entertainment", "food_bev", 
+                               "ground_service", "overall", "seat_comfort")]
 
 names(which(colSums(is.na(airlines_imputed))>0))
 # "overall" "seat_comfort" "cabin_service" "food_bev"
@@ -57,7 +56,7 @@ air_imputed_numerical_3$value_for_money[is.na(air_imputed_numerical_3$value_for_
 
 air_imputed_numerical_3 = air_imputed_numerical_3[, c("cabin_service", "entertainment",
                                                       "food_bev", "ground_service", "overall",
-                                                      "seat_comfort", "value_for_money")]
+                                                      "seat_comfort")]
 
 # airlines_imputed_mean: Impute mean of the ratings
 air_imputed_mean$overall[is.na(air_imputed_mean$overall)] = mean(air_imputed_mean$overall, na.rm=TRUE)
@@ -70,7 +69,7 @@ air_imputed_mean$value_for_money[is.na(air_imputed_mean$value_for_money)] = mean
 
 air_imputed_mean = air_imputed_mean[, c("cabin_service", "entertainment",
                                         "food_bev", "ground_service", "overall",
-                                        "seat_comfort", "value_for_money")]
+                                        "seat_comfort")]
 
 # Alternative imputation (median):
 # class(airlines_imputed$seat_comfort)
@@ -153,7 +152,7 @@ airlines$value_for_money[is.na(airlines$value_for_money)] = "NA"
 ## Question 1:
 
 features = c("cabin_service", "entertainment", "food_bev", "ground_service", 
-             "seat_comfort", "value_for_money")
+             "seat_comfort")
 
 # NOTE: The correlation between overall and value_for_money is very high for all
 #       data sets in question. Therefore, we omit 'value_for_money'.
@@ -164,22 +163,26 @@ features = c("cabin_service", "entertainment", "food_bev", "ground_service",
 # > cor(air_imputed_mean$overall, air_imputed_mean$value_for_money)
 # [1] 0.8907861
 
-# Approach 1:Computing Relative importance in multiple linear model of 'overall'
+# Computing relative importance using randomForest:
 
-# For air_imputed_numerical_3:
-myimp_3 = calc.relimp(overall ~., data = air_imputed_numerical_3)
-summary(lm(overall ~ ., data = air_imputed_numerical_3))
-myimp_3@lmg/sum(myimp_3@lmg)
+library(randomForest)
+set.seed(123)
+fit_3 <- randomForest(overall ~ ., data = air_imputed_numerical_3,
+                    importance = TRUE, ntree = 1000)
 
-impvec_3 = c(00.17038122, 0.05867514, 0.09811587, 0.17298709, 0.16546550) 
+output_3 <- importance(fit_3, scale = T)[, 1]
+output_3[output_3 < 0] <- 0
+output_3 <- round(output_3 * 100/sum(output_3), 1)
+output_3
+impvec_3 = c( 22.1, 13.3, 14.8, 28.8, 21.0)
 impact_3 = data.frame(feature = c("cabin_service", "entertainment", "food_bev", "ground_service",
                                   "seat_comfort"), imp = impvec_3)
 
 impact_plot_3 = ggplot(data = impact_3, aes(x = feature, y = imp)) + 
   geom_bar(aes(fill = feature), stat = 'identity') + 
   scale_fill_brewer(palette = "RdPu") +
-  xlab("Feature") + ylab("Est. Coeff. of Determination (r^2)") + theme_minimal() +
-  ggtitle("Feature impact on overall rating: calc.relimp") +
+  xlab("Feature") + ylab("Relative importance") + theme_minimal() +
+  ggtitle("Feature impact on overall rating: randomForest()") +
   guides(fill=guide_legend(title="Feature")) +
   theme(panel.spacing = unit(2, "lines"),
         axis.text.x=element_text(angle=45,hjust=1),
@@ -189,19 +192,23 @@ impact_plot_3 = ggplot(data = impact_3, aes(x = feature, y = imp)) +
 
 
 # For air_imputed_mean:
-myimp_mean = calc.relimp(overall ~., data = air_imputed_mean)
-summary(lm(overall ~ ., data = air_imputed_mean))
-myimp_mean@lmg/sum(myimp_mean@lmg)
 
-impvec_mean = c(0.17558693, 0.06837641, 0.11472528, 0.12867938, 0.15639555)
+set.seed(123)
+fit_mean <- randomForest(overall ~ ., data = air_imputed_mean,
+                      importance = TRUE, ntree = 1000)
+
+output_mean <- importance(fit_mean, scale = T)[, 1]
+output_mean[output_mean < 0] <- 0
+output_mean <- round(output_mean * 100/sum(output_mean), 1)
+impvec_mean = c(24.1, 13.1, 14.3, 28.1, 20.3)
 impact_mean = data.frame(feature = c("cabin_service", "entertainment", "food_bev", "ground_service",
                                      "seat_comfort"), imp = impvec_mean)
 
 impact_plot_mean = ggplot(data = impact_mean, aes(x = feature, y = imp)) + 
   geom_bar(aes(fill = feature), stat = 'identity') + 
   scale_fill_brewer(palette = "RdPu") +
-  xlab("Feature") + ylab("Est. Coeff. of Determination (r^2)") + theme_minimal() +
-  ggtitle("Feature impact on overall rating: calc.relimp") +
+  xlab("Feature") + ylab("Relative importance") + theme_minimal() +
+  ggtitle("Feature impact on overall rating: randomForest()") +
   guides(fill=guide_legend(title="Feature")) +
   theme(panel.spacing = unit(2, "lines"),
         axis.text.x=element_text(angle=45,hjust=1),
@@ -210,19 +217,25 @@ impact_plot_mean = ggplot(data = impact_mean, aes(x = feature, y = imp)) +
         axis.title=element_text(size=14))
 
 # For air_complete:
-myimp_comp = calc.relimp(overall ~., data = air_complete)
-summary(lm(overall ~ ., data = air_complete))
-myimp_comp@lmg/sum(myimp_comp@lmg)
+set.seed(123)
+fit_comp <- randomForest(overall ~ ., data = air_complete,
+                         importance = TRUE, ntree = 1000)
 
-impvec_comp = c(0.1315520, 0.1228263, 0.1387163, 0.1930213, 0.1486761)
+output_comp <- importance(fit_comp, scale = T)[, 1]
+output_comp[output_comp < 0] <- 0
+output_comp <- round(output_comp * 100/sum(output_comp), 1)
+
+impvec_comp = c(19.5, 13.1, 15.1, 30.9, 21.3)
+impact_comp = data.frame(feature = c("cabin_service", "entertainment", "food_bev", "ground_service",
+                                     "seat_comfort"), imp = impvec_comp)
 impact_comp = data.frame(feature = c("cabin_service", "entertainment", "food_bev", "ground_service",
                                      "seat_comfort"), imp = impvec_comp)
 
 impact_plot_comp = ggplot(data = impact_comp, aes(x = feature, y = imp)) + 
   geom_bar(aes(fill = feature), stat = 'identity') + 
   scale_fill_brewer(palette = "RdPu") +
-  xlab("Feature") + ylab("Est. Coeff. of Determination (r^2)") + theme_minimal() +
-  ggtitle("Feature impact on overall rating: calc.relimp") +
+  xlab("Feature") + ylab("Relative importance") + theme_minimal() +
+  ggtitle("Feature impact on overall rating: randomForest()") +
   guides(fill=guide_legend(title="Feature")) +
   theme(panel.spacing = unit(2, "lines"),
         axis.text.x=element_text(angle=45,hjust=1),
@@ -270,8 +283,8 @@ airlines_neg = airlines %>% filter(overall %in% c('1', '2', '3', '4', '5'))
 alaska_pos = airlines_pos %>% filter(airline == 'Alaska Airlines')
 alaska_neg = airlines_neg %>% filter(airline == 'Alaska Airlines')
 
-allegiant_pos = airlines_pos %>% filter(airline == 'Allegiant Air')
-allegiant_neg = airlines_neg %>% filter(airline == 'Allegiant Air')
+# allegiant_pos = airlines_pos %>% filter(airline == 'Allegiant Air')
+# allegiant_neg = airlines_neg %>% filter(airline == 'Allegiant Air')
 
 american_pos = airlines_pos %>% filter(airline == 'American Airlines')
 american_neg = airlines_neg %>% filter(airline == 'American Airlines')
@@ -288,8 +301,8 @@ hawaiian_neg = airlines_neg %>% filter(airline == 'Hawaiian Airlines')
 jetblue_pos = airlines_pos %>% filter(airline == 'Jetblue Airways')
 jetblue_neg = airlines_neg %>% filter(airline == 'Jetblue Airways')
 
-# southwest_pos = airlines_pos %>% filter(airline == 'Southwest Airlines')
-# southwest_neg = airlines_neg %>% filter(airline == 'Southwest Airlines')
+southwest_pos = airlines_pos %>% filter(airline == 'Southwest Airlines')
+southwest_neg = airlines_neg %>% filter(airline == 'Southwest Airlines')
 
 spirit_pos = airlines_pos %>% filter(airline == 'Spirit Airlines')
 spirit_neg = airlines_neg %>% filter(airline == 'Spirit Airlines')
@@ -309,8 +322,8 @@ write.table(airlines_neg$customer_review,"all_neg.txt",sep="\t",row.names=FALSE)
 write.table(alaska_pos$customer_review,"alaska_pos.txt",sep="\t",row.names=FALSE)
 write.table(alaska_neg$customer_review,"alaska_neg.txt",sep="\t",row.names=FALSE)
 
-write.table(allegiant_pos$customer_review,"allegiant_pos.txt",sep="\t",row.names=FALSE)
-write.table(allegiant_neg$customer_review,"allegiant_neg.txt",sep="\t",row.names=FALSE)
+# write.table(allegiant_pos$customer_review,"allegiant_pos.txt",sep="\t",row.names=FALSE)
+# write.table(allegiant_neg$customer_review,"allegiant_neg.txt",sep="\t",row.names=FALSE)
 
 write.table(american_pos$customer_review,"american_pos.txt",sep="\t",row.names=FALSE)
 write.table(american_neg$customer_review,"american_neg.txt",sep="\t",row.names=FALSE)
@@ -327,8 +340,8 @@ write.table(hawaiian_neg$customer_review,"hawaiian_neg.txt",sep="\t",row.names=F
 write.table(jetblue_pos$customer_review,"jetblue_pos.txt",sep="\t",row.names=FALSE)
 write.table(jetblue_neg$customer_review,"jetblue_neg.txt",sep="\t",row.names=FALSE)
 
-# write.table(southwest_pos$customer_review,"southwest_pos.txt",sep="\t",row.names=FALSE)
-# write.table(southwest_neg$customer_review,"southwest_neg.txt",sep="\t",row.names=FALSE)
+write.table(southwest_pos$customer_review,"southwest_pos.txt",sep="\t",row.names=FALSE)
+write.table(southwest_neg$customer_review,"southwest_neg.txt",sep="\t",row.names=FALSE)
 
 write.table(spirit_pos$customer_review,"spirit_pos.txt",sep="\t",row.names=FALSE)
 write.table(spirit_neg$customer_review,"spirit_neg.txt",sep="\t",row.names=FALSE)
@@ -349,12 +362,12 @@ write.table(virgin_neg$customer_review,"virgin_neg.txt",sep="\t",row.names=FALSE
 # The list of valid airlines
 airline_list <<- list("All" = "all",
                       "Alaska Airlines" = "alaska",
-                      "Allegiant Air" = "allegiant",
                       "American Airlines" = "american",
                       "Delta Air Lines" = "delta",
                       "Frontier Airlines" = "frontier",
                       "Hawaiian Airlines" = "hawaiian",
                       "Jetblue Airways" = "jetblue",
+                      "Soutwest Airlines" = "southwest",
                       "Spirit Airlines" = "spirit",
                       "United Airlines" = "united",
                       "Virgin America" = "virgin")
@@ -377,7 +390,7 @@ getTermMatrixPos <- memoise(function(company) {
                     c(stopwords("english"), 
                       "flight", "airplane", "united", "alaska", "allegiant", "plane",
                       "spirit", "delta", "american", "airlines", "virgin", "america",
-                      "hawaiian", "frontier", "flights", "airline", "jetblue"))
+                      "hawaiian", "frontier", "flights", "airline", "jetblue", "southwest"))
   
   myDTM = TermDocumentMatrix(myCorpus,
                              control = list(minWordLength = 1))
@@ -402,7 +415,7 @@ getTermMatrixNeg <- memoise(function(company) {
                     c(stopwords("english"), 
                       "flight", "airplane", "united", "alaska", "allegiant", "plane",
                       "spirit", "delta", "american", "airlines", "virgin", "america",
-                      "hawaiian", "frontier", "flights", "airline", "jetblue"))
+                      "hawaiian", "frontier", "flights", "airline", "jetblue", "southwest"))
   
   myDTM = TermDocumentMatrix(myCorpus,
                              control = list(minWordLength = 1))
@@ -570,4 +583,28 @@ getTermMatrixNeg <- memoise(function(company) {
 # 
 # 
 
+
+
+# Approach 1:Computing Relative importance in multiple linear model of 'overall'
+
+# For air_imputed_numerical_3:
+# myimp_3 = calc.relimp(overall ~., data = air_imputed_numerical_3)
+# summary(lm(overall ~ ., data = air_imputed_numerical_3))
+# myimp_3@lmg/sum(myimp_3@lmg)
+# 
+# impvec_3 = c(00.17038122, 0.05867514, 0.09811587, 0.17298709, 0.16546550) 
+
+# For air_imputed_mean
+# myimp_mean = calc.relimp(overall ~., data = air_imputed_mean)
+# summary(lm(overall ~ ., data = air_imputed_mean))
+# myimp_mean@lmg/sum(myimp_mean@lmg)
+# 
+# impvec_mean = c(0.17558693, 0.06837641, 0.11472528, 0.12867938, 0.15639555)
+
+# For air_complete:
+# myimp_comp = calc.relimp(overall ~., data = air_complete)
+# summary(lm(overall ~ ., data = air_complete))
+# myimp_comp@lmg/sum(myimp_comp@lmg)
+# 
+# impvec_comp = c(0.1315520, 0.1228263, 0.1387163, 0.1930213, 0.1486761)
 

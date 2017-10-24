@@ -72,9 +72,9 @@ shinyUI(dashboardPage(
                                     fluidRow(box(tags$p("One way to gain insights into what customers care about is to analyze review data.
                                                    In this project, I scrape airline review data from ", 
                                                         tags$a(href = "http://www.airlinequality.com/", "Skytrax "), 
-                                                        "for eleven major US carriers. The carriers analyzed are: Alaska Airlines, Allegiant
-                                                        Air, American Airlines, Delta Air Lines, Frontier Airlines, Hawaiian Airlines, Jetblue
-                                                        Airways, Southwest Airlines, Spirit Airlines, United Airlines, and Virgin America."),
+                                                        "for eleven major US carriers. The carriers analyzed are: Alaska Airlines, American 
+                                                        Airlines, Delta Air Lines, Frontier Airlines, Hawaiian Airlines, Jetblue, Airways, 
+                                                        Southwest Airlines, Spirit Airlines, United Airlines, and Virgin America."),
                                                  # tags$div(
                                                  #   tags$ul(
                                                  #     tags$li("Alaska Airlines"),
@@ -148,7 +148,12 @@ shinyUI(dashboardPage(
                                                       box(plotOutput('impmean'), width = 12)),
                                                conditionalPanel("input.button0 == 'Complete cases only'",
                                                                 box(plotOutput('impcomp'), width = 12))),
-                                      fluidRow(box(width = 12)),
+                                      fluidRow(box(tags$p('The above values represent the estimated relative power of each of the variables "cabin_service", 
+                                                          "entertainment", "food_bev", "ground_service", and "seat_comfort" in predicting "overall" rating. 
+                                                          The computations are done with the randomForest() function from the R package "randomForest," 
+                                                          which uses the non-parametric Breiman random forest algorithm for regression.',
+                                                          tags$a(href = 'http://www.bios.unc.edu/~dzeng/BIOS740/randomforest.pdf', '(reference)')),
+                                        width = 12)),
                                       fluidRow(box(plotOutput('features'), width = 12))),
                                       # fluidRow(box(p("The above plots are based on the results of running a Pearson Chi-square
                                       #                test of independence on each combination of the variables: aircraft type,
@@ -196,7 +201,8 @@ shinyUI(dashboardPage(
                         align = 'center'),
       tabItem(tabName = 'conclusions', fluidRow(box(tags$div(class = "header", 
                                                     tags$h4("Conclusions")), width = 12), 
-                                              align = 'center')),
+                                              align = 'center'),
+                                      fluidRow(box(p(), width = 12))),
       tabItem(tabName = 'data', fluidRow(infoBoxOutput('pdf', width = 6)),
               fluidRow(box(DT::dataTableOutput('table'), 
                            width = 12)))
