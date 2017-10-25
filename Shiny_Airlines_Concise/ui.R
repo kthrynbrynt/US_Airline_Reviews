@@ -99,8 +99,8 @@ shinyUI(dashboardPage(
                                                  ),
                                                  width = 12))),
       tabItem(tabName = 'question1', fluidRow(box(tags$div(class = "header",
-                                                      tags$h4("Which aspects of a flight most positively and most negatively 
-                                                                  affect customers' overall rating of an airline?")), width = 12),
+                                                      tags$h4("Which aspect of a flight best predicts a 
+                                                              customers' overall rating of an airline?")), width = 12),
                                                       align = 'center'),
                                       fluidRow(radioButtons('button0', 'Data to show:', c('Middle rating imputed', 'Mean imputed', 'Complete cases only'),
                                                             selected = 'Middle rating imputed'), align = 'center'),

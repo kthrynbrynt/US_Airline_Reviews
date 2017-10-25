@@ -11,17 +11,11 @@ library('wordcloud2') #word cloud generator2
 library(memoise)
 library(relaimpo)
 
-airlines_raw = read.csv('~/Dropbox/NYCDSA/US_Airline_Reviews/reviews_final.csv')
-airlines = read.csv('~/Dropbox/NYCDSA/US_Airline_Reviews/reviews_final.csv')
-airlines_imputed_numerical = read.csv('~/Dropbox/NYCDSA/US_Airline_Reviews/reviews_final.csv')
-airlines_imputed = read.csv('~/Dropbox/NYCDSA/US_Airline_Reviews/reviews_final.csv')  
+airlines_raw = read.csv('www/final_reviews.csv')
+airlines = read.csv('www/final_reviews.csv')
+airlines_imputed_numerical = read.csv('www/final_reviews.csv')
+airlines_imputed = read.csv('www/final_reviews.csv')  
 
-# Remove rogue line and turn numeric-like categorical variables into factors
-# airlines_raw = airlines_raw %>% filter(airline != "http://www.airlinequality.com/airline-reviews/american-airlines/")
-# airlines = airlines %>% filter(airline != "http://www.airlinequality.com/airline-reviews/american-airlines/")
-# airlines_imputed_numerical = airlines_imputed_numerical %>% filter(airline != "http://www.airlinequality.com/airline-reviews/american-airlines/")
-# airlines_imputed = airlines_imputed %>% filter(airline != "http://www.airlinequality.com/airline-reviews/american-airlines/")
-#airlines = airlines %>% select(-X)
 airlines$overall = as.factor(airlines$overall)
 airlines$seat_comfort = as.factor(airlines$seat_comfort)
 airlines$cabin_service = as.factor(airlines$cabin_service)
